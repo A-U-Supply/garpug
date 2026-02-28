@@ -1,4 +1,6 @@
 mod cli;
+mod data;
+mod model;
 
 use clap::Parser;
 use cli::{Cli, Commands};
