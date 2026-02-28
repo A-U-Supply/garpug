@@ -11,28 +11,24 @@ use cli::{Cli, Commands, ModelConfig};
 use data::{fetch_text, strip_gutenberg, Dataset, Vocab};
 use model::GPT;
 
-fn get_device() -> Device {
+fn get_metal_device() -> Option<Device> {
     #[cfg(feature = "metal")]
     {
         match Device::new_metal(0) {
-            Ok(d) => {
-                println!("Using Metal GPU");
-                return d;
-            }
-            Err(e) => {
-                eprintln!("Metal not available ({e}), falling back to CPU");
-            }
+            Ok(d) => return Some(d),
+            Err(_) => {}
         }
     }
-    println!("Using CPU");
-    Device::Cpu
+    None
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Commands::Train(args) => {
-            let device = get_device();
+            // CPU is faster than Metal for training (candle's Metal backward pass has high overhead)
+            let device = Device::Cpu;
+            println!("Using CPU (faster than Metal for training)");
 
             // Fetch and prepare text
             println!("Loading text from: {}", args.input);
@@ -62,7 +58,13 @@ fn main() -> Result<()> {
         }
 
         Commands::Prompt(args) => {
-            let device = get_device();
+            // Metal is fine for inference (forward pass only)
+            let device = get_metal_device().unwrap_or(Device::Cpu);
+            if matches!(device, Device::Cpu) {
+                println!("Using CPU");
+            } else {
+                println!("Using Metal GPU");
+            }
 
             // Load config
             let config_str = std::fs::read_to_string(args.model.join("config.json"))?;
