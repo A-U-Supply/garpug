@@ -3,7 +3,7 @@ mod data;
 mod model;
 mod train;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use candle_core::Device;
 use clap::Parser;
 
@@ -68,11 +68,16 @@ fn main() -> Result<()> {
             let config_str = std::fs::read_to_string(args.model.join("config.json"))?;
             let config: serde_json::Value = serde_json::from_str(&config_str)?;
 
-            let vocab_size = config["vocab_size"].as_u64().unwrap() as usize;
-            let n_embd = config["n_embd"].as_u64().unwrap() as usize;
-            let n_layer = config["n_layer"].as_u64().unwrap() as usize;
-            let n_head = config["n_head"].as_u64().unwrap() as usize;
-            let block_size = config["block_size"].as_u64().unwrap() as usize;
+            let vocab_size = config["vocab_size"].as_u64()
+                .context("config.json missing or invalid 'vocab_size'")? as usize;
+            let n_embd = config["n_embd"].as_u64()
+                .context("config.json missing or invalid 'n_embd'")? as usize;
+            let n_layer = config["n_layer"].as_u64()
+                .context("config.json missing or invalid 'n_layer'")? as usize;
+            let n_head = config["n_head"].as_u64()
+                .context("config.json missing or invalid 'n_head'")? as usize;
+            let block_size = config["block_size"].as_u64()
+                .context("config.json missing or invalid 'block_size'")? as usize;
 
             // Load vocab
             let vocab = Vocab::load(&args.model.join("vocab.json"))?;

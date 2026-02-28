@@ -57,7 +57,9 @@ impl Vocab {
 pub fn fetch_text(input: &str) -> Result<String> {
     if input.starts_with("http://") || input.starts_with("https://") {
         let resp = reqwest::blocking::get(input)
-            .context("Failed to fetch URL")?;
+            .context("Failed to fetch URL")?
+            .error_for_status()
+            .context("HTTP request returned an error status")?;
         let text = resp.text().context("Failed to read response body")?;
         Ok(text)
     } else {

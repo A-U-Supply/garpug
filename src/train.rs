@@ -42,6 +42,21 @@ pub fn run_training(
     let eval_interval = 100;
     let eval_batches = 8;
 
+    if dataset.train.len() <= config.block_size + 1 {
+        anyhow::bail!(
+            "Training data ({} tokens) is too short for context window ({}). Use a longer text or smaller --context.",
+            dataset.train.len(),
+            config.block_size
+        );
+    }
+    if dataset.val.len() <= config.block_size + 1 {
+        anyhow::bail!(
+            "Validation data ({} tokens) is too short for context window ({}). Use a longer text or smaller --context.",
+            dataset.val.len(),
+            config.block_size
+        );
+    }
+
     println!("Model: {} layers, {} dim, {} heads, {} context",
         config.n_layer, config.n_embd, config.n_head, config.block_size);
     println!("Vocab size: {}", config.vocab_size);
