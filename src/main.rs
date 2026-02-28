@@ -1,6 +1,7 @@
 mod cli;
 mod data;
 mod model;
+mod train;
 
 use clap::Parser;
 use cli::{Cli, Commands};
