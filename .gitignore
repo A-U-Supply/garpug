@@ -2,3 +2,4 @@
 /output
 *.safetensors
 .env
+.worktrees
