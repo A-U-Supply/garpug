@@ -69,13 +69,16 @@ impl GPT2Attention {
         // [b, t, n_embd] -> [b, n_head, t, head_dim]
         let q = q
             .reshape((b, t, self.n_head, self.head_dim))?
-            .transpose(1, 2)?;
+            .transpose(1, 2)?
+            .contiguous()?;
         let k = k
             .reshape((b, t, self.n_head, self.head_dim))?
-            .transpose(1, 2)?;
+            .transpose(1, 2)?
+            .contiguous()?;
         let v = v
             .reshape((b, t, self.n_head, self.head_dim))?
-            .transpose(1, 2)?;
+            .transpose(1, 2)?
+            .contiguous()?;
 
         // Scaled dot-product attention with causal mask
         let scale = (self.head_dim as f64).powf(-0.5);
