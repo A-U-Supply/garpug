@@ -39,16 +39,22 @@ pub fn run_tuning(input: &str, epochs: usize, output_dir: &Path) -> Result<()> {
     println!("Using CPU");
 
     // Download pretrained GPT-2
-    println!("Downloading GPT-2 weights and tokenizer...");
+    println!("Downloading GPT-2 weights...");
     let api = Api::new()?;
     let repo = api.model(HF_MODEL.to_string());
     let weights_path = repo.get("model.safetensors")?;
-    let tokenizer_path = repo.get("tokenizer.json")?;
-    println!("Downloaded.");
+    println!("Downloaded weights.");
 
-    // Load tokenizer
-    let tokenizer = Tokenizer::from_file(&tokenizer_path)
+    // Download tokenizer directly (hf-hub's get() fails on non-LFS files)
+    println!("Downloading tokenizer...");
+    let tokenizer_url = format!(
+        "https://huggingface.co/{}/resolve/main/tokenizer.json",
+        HF_MODEL
+    );
+    let tokenizer_bytes = reqwest::blocking::get(&tokenizer_url)?.bytes()?;
+    let tokenizer = Tokenizer::from_bytes(&tokenizer_bytes)
         .map_err(|e| anyhow::anyhow!("Failed to load tokenizer: {e}"))?;
+    println!("Downloaded tokenizer.");
 
     // Fetch and tokenize text
     println!("Loading text from: {input}");
@@ -165,8 +171,10 @@ pub fn run_tuning(input: &str, epochs: usize, output_dir: &Path) -> Result<()> {
         serde_json::to_string_pretty(&config_json)?,
     )?;
 
-    // Copy tokenizer to output dir
-    std::fs::copy(&tokenizer_path, output_dir.join("tokenizer.json"))?;
+    // Save tokenizer to output dir
+    tokenizer
+        .save(output_dir.join("tokenizer.json"), false)
+        .map_err(|e| anyhow::anyhow!("Failed to save tokenizer: {e}"))?;
 
     println!("Model saved to {}", output_dir.display());
     Ok(())
