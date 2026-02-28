@@ -38,7 +38,12 @@ pub fn run_training(
     output_dir: &Path,
     device: &Device,
 ) -> Result<()> {
-    let batch_size = 64;
+    // Scale batch size to fit in memory — larger models need smaller batches
+    let batch_size = match config.n_embd {
+        n if n >= 768 => 8,    // large/xl
+        n if n >= 384 => 16,   // medium
+        _ => 64,               // small
+    };
     let eval_interval = 100;
     let eval_batches = 8;
 
@@ -120,6 +125,7 @@ pub fn run_training(
 
     // Save config
     let config_json = serde_json::json!({
+        "model_type": "char",
         "vocab_size": config.vocab_size,
         "n_embd": config.n_embd,
         "n_layer": config.n_layer,
@@ -158,5 +164,21 @@ fn format_params(n: usize) -> String {
         format!("{:.1}K", n as f64 / 1_000.0)
     } else {
         format!("{n}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_char_config_has_model_type() {
+        let config_json = serde_json::json!({
+            "model_type": "char",
+            "vocab_size": 80,
+            "n_embd": 128,
+            "n_layer": 4,
+            "n_head": 4,
+            "block_size": 256,
+        });
+        assert_eq!(config_json["model_type"].as_str().unwrap(), "char");
     }
 }

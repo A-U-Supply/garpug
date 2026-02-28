@@ -11,8 +11,10 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Train a model on a text file or URL
+    /// Train a character-level model on a text file or URL
     Train(TrainArgs),
+    /// Fine-tune pretrained GPT-2 on a text file or URL
+    Tune(TuneArgs),
     /// Generate text from a trained model
     Prompt(PromptArgs),
 }
@@ -49,6 +51,21 @@ pub struct TrainArgs {
 
     /// Output directory for model artifacts
     #[arg(short, long, default_value = "output")]
+    pub output: PathBuf,
+}
+
+#[derive(Parser)]
+pub struct TuneArgs {
+    /// Path to text file or Project Gutenberg URL
+    #[arg(short, long)]
+    pub input: String,
+
+    /// Number of training epochs
+    #[arg(long, default_value_t = 50)]
+    pub epochs: usize,
+
+    /// Output directory for fine-tuned model
+    #[arg(short, long, default_value = "tuned-output")]
     pub output: PathBuf,
 }
 
@@ -167,6 +184,19 @@ mod tests {
                 assert_eq!(args.temperature, 1.0);
             }
             _ => panic!("expected Prompt"),
+        }
+    }
+
+    #[test]
+    fn test_tune_defaults() {
+        let cli = Cli::parse_from(["garpug", "tune", "--input", "book.txt"]);
+        match cli.command {
+            Commands::Tune(args) => {
+                assert_eq!(args.input, "book.txt");
+                assert_eq!(args.epochs, 50);
+                assert_eq!(args.output.to_str().unwrap(), "tuned-output");
+            }
+            _ => panic!("expected Tune"),
         }
     }
 
